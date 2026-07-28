@@ -1,27 +1,27 @@
-import streamlit as  st
-import joblib 
+import streamlit as st
+import joblib
 import re
 import string
-
 import nltk
+
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
-nltk.download("stopwords")
-stop_words=set(stopwords.words("english"))
-stemmer=PorterStemmer()
 
-model=joblib.load("models/fake_news_mode.pkl")
-vectorizer=joblib.load("models/vectorizer.pkl")
+# ----------------------------------
+# Download NLTK Stopwords (Only Once)
+# ----------------------------------
 
-def clean_text(text):
-    text=text.lower()
-    text=re.sub(f"[{string.punctuation}]","",text)
-    text=re.sub(r"\d+","",text)
-    text=re.sub(r"\s+","",text)
-    words=text.split()
-    words=[word for word in  words if word not in stop_words ]
-    words=[stemmer.stem(word) for word in words]
-    return "".join(words)
+try:
+    stop_words = set(stopwords.words("english"))
+except LookupError:
+    nltk.download("stopwords")
+    stop_words = set(stopwords.words("english"))
+
+stemmer = PorterStemmer()
+
+# ----------------------------------
+# Page Configuration
+# ----------------------------------
 
 st.set_page_config(
     page_title="Fake News Detection",
@@ -29,50 +29,127 @@ st.set_page_config(
     layout="centered"
 )
 
+# ----------------------------------
+# Load Trained Model
+# ----------------------------------
+
+model = joblib.load("models/fake_news_mode.pkl")
+vectorizer = joblib.load("models/vectorizer.pkl")
+
+# ----------------------------------
+# Text Cleaning Function
+# ----------------------------------
+
+def clean_text(text):
+    # Convert to lowercase
+    text = text.lower()
+
+    # Remove punctuation
+    text = re.sub(f"[{string.punctuation}]", " ", text)
+
+    # Remove numbers
+    text = re.sub(r"\d+", "", text)
+
+    # Remove extra spaces
+    text = re.sub(r"\s+", " ", text).strip()
+
+    # Tokenize
+    words = text.split()
+
+    # Remove stopwords
+    words = [word for word in words if word not in stop_words]
+
+    # Stemming
+    words = [stemmer.stem(word) for word in words]
+
+    # Join words back
+    return " ".join(words)
+
+# ----------------------------------
+# Sidebar
+# ----------------------------------
+
 st.sidebar.title("📰 Fake News Detection")
+
 st.sidebar.info(
     """
-    Model:
-    Passive Aggressive Classifier
-    
-    NLP:
-    TF-IDF Vectorizer
+### Model
+Passive Aggressive Classifier
 
-    Author:
-    Muhammad Hasnain
-  """
+### NLP
+TF-IDF Vectorizer
+
+### Author
+Muhammad Hasnain
+"""
 )
+
+# ----------------------------------
+# Main Title
+# ----------------------------------
+
 st.title("📰 Fake News Detection")
+
 st.write(
-    "Enter a news article below to check whether it is **Fake** or **Real**."
+    """
+This application predicts whether a news article is **Fake** or **Real**
+using Natural Language Processing (NLP) and Machine Learning.
+"""
 )
+
 st.divider()
 
-news=st.text_area(
+# ----------------------------------
+# User Input
+# ----------------------------------
+
+news = st.text_area(
     "Paste News Article",
-    height=250
+    height=250,
+    placeholder="Paste the complete news article here..."
 )
 
-if st.button("Predict",use_container_width=True):
-    if news.strip() == "":
-        st.warning("Please enter some news.")
+# ----------------------------------
+# Prediction
+# ----------------------------------
+
+if st.button("Predict", use_container_width=True):
+
+    if not news.strip():
+        st.warning("⚠ Please enter a news article.")
     else:
 
-        cleaned = clean_text(news)
+        cleaned_news = clean_text(news)
 
-        vector = vectorizer.transform([cleaned])
+        vector = vectorizer.transform([cleaned_news])
 
-        prediction = model.predict(vector)
+        prediction = model.predict(vector)[0]
 
         st.divider()
 
-        if prediction[0] == 0:
-            st.error("🔴 Fake News")
+        if prediction == 0:
+            st.error("🔴 Prediction: Fake News")
         else:
-            st.success("🟢 Real News")
+            st.success("🟢 Prediction: Real News")
 
         st.divider()
 
-        st.subheader("News Entered")
+        st.subheader("📝 News Article")
 
         st.write(news)
+
+        st.divider()
+
+        st.subheader("🧹 Processed Text")
+
+        st.write(cleaned_news)
+
+# ----------------------------------
+# Footer
+# ----------------------------------
+
+st.divider()
+
+st.caption(
+    "Built with ❤️ using Streamlit, Scikit-learn, and NLP."
+)
