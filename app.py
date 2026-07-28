@@ -11,12 +11,12 @@ from nltk.stem import PorterStemmer
 # Download NLTK Stopwords (Only Once)
 # ----------------------------------
 
+
 try:
     stop_words = set(stopwords.words("english"))
 except LookupError:
-    nltk.download("stopwords")
+    nltk.download("stopwords", quiet=True)
     stop_words = set(stopwords.words("english"))
-
 stemmer = PorterStemmer()
 
 # ----------------------------------
