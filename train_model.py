@@ -1,190 +1,237 @@
 import pandas as pd
-import numpy as np
 import re
 import string
 import nltk
+import joblib
+import matplotlib.pyplot as plt
+import seaborn as sns
+
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
 
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
+
 from sklearn.linear_model import LogisticRegression
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.linear_model import PassiveAggressiveClassifier
 
-from sklearn.metrics import( accuracy_score
-                            ,precision_score,
-                            recall_score,
-                            f1_score,
-                            confusion_matrix,
-                            classification_report,
-                            ConfusionMatrixDisplay
-                            )
-import joblib
+from sklearn.metrics import (
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    classification_report,
+    confusion_matrix,
+    ConfusionMatrixDisplay
+)
 
-import matplotlib.pyplot as plt
-import seaborn as sns
-fake=pd.read_csv("dataset/Fake.csv")
-true=pd.read_csv("dataset/True.csv")
+# -------------------------------------------------------
+# Download NLTK Stopwords
+# -------------------------------------------------------
 
-print(fake.head())
-print(true.head())
-print(fake.shape)
-print(true.shape)
+nltk.download("stopwords")
 
-print(fake.columns)
-print(true.columns)
+stop_words = set(stopwords.words("english"))
+stemmer = PorterStemmer()
 
-print(fake.info())
-print(true.info())
+# -------------------------------------------------------
+# Load Dataset
+# -------------------------------------------------------
 
-print(fake.isnull().sum())
-print(fake.isnull().sum())
+fake = pd.read_csv("dataset/Fake.csv")
+true = pd.read_csv("dataset/True.csv")
 
-true["label"]=1
-fake["label"]=0
+fake["label"] = 0
+true["label"] = 1
 
-df=pd.concat([fake,true], ignore_index=True)
-df=df.sample(frac=1,random_state=42)
+df = pd.concat([fake, true], ignore_index=True)
+
+# Shuffle Dataset
+
+df = df.sample(frac=1, random_state=42).reset_index(drop=True)
+
 print(df.head())
 print(df.shape)
 
-sns.countplot(x="label",data=df)
-plt.title("Fake Vs Real News")
+# -------------------------------------------------------
+# Visualization
+# -------------------------------------------------------
+
+sns.countplot(x="label", data=df)
+plt.title("Fake vs Real News")
 plt.show()
 
-df.to_csv("dataset/news.csv",index=False)
-
-nltk.download("stopwords")
-stop_words=set(stopwords.words("english"))
-stemmer=PorterStemmer()
+# -------------------------------------------------------
+# Text Cleaning Function
+# -------------------------------------------------------
 
 def clean_text(text):
-    text=text.lower()
-    text=re.sub(f"[{string.punctuation}]","",text)
-    text=re.sub(r"\d+","",text)
-    text=re.sub(r"\s+","",text)
-    words=text.split()
-    words=[word for word in  words if word not in stop_words ]
-    words=[stemmer.stem(word) for word in words]
-    return "".join(words)
 
-df["content"]=df["title"]+" "+df["text"]
-df["content"]=df["content"].apply(clean_text)
-print(df[["content","label"]].head())
-df.to_csv("dataset/news_clean.csv",index=False)
+    text = text.lower()
 
-x=df["content"]
-y=df["label"]
+    text = re.sub(f"[{string.punctuation}]", " ", text)
 
-vectorizer=TfidfVectorizer(max_features=5000)
-x=vectorizer.fit_transform(x)
+    text = re.sub(r"\d+", "", text)
 
-x_train,x_test,y_train,y_test=train_test_split(x,y,test_size=0.2,random_state=42)
+    text = re.sub(r"\s+", " ", text)
 
-lr=LogisticRegression()
-lr.fit(x_train,y_train)
-lr_pred=lr.predict(x_test)
-print(lr_pred)
-lr_acc=accuracy_score(y_test,lr_pred)
-print("Logistic Regression Accuracy:",lr_acc)
+    words = text.split()
 
-nb=MultinomialNB()
-nb.fit(x_train,y_train)
-nb_pred=nb.predict(x_test)
-nb_acc=accuracy_score(y_test,nb_pred)
-print("Naive Bayes Accuracy:",nb_acc)
+    words = [
+        word for word in words
+        if word not in stop_words
+    ]
 
-pac=PassiveAggressiveClassifier(max_iter=1000)
-pac.fit(x_train,y_train)
-pac_pred=pac.predict(x_test)
-pac_acc=accuracy_score(y_test,pac_pred)
-print("Passive Aggressive Accuracy:",pac_acc)
+    words = [
+        stemmer.stem(word)
+        for word in words
+    ]
 
-print("\nModel Comparsion")
-print("=============")
-print("Logistic Regression :",lr_acc)
-print("Naive Bayes :",nb_acc)
-print("Passive Aggressive :",pac_acc)
+    return " ".join(words)
 
-best_model=pac
-joblib.dump(best_model,"models/fake_news_mode.pkl")
-print("Model save successfully!")
+# -------------------------------------------------------
+# Feature Engineering
+# -------------------------------------------------------
 
-joblib.dump(vectorizer,"models/vectorizer.pkl")
-print("Vectorizer Saved!")
+df["content"] = df["title"] + " " + df["text"]
 
-accuracy=accuracy_score(y_test,lr_pred)
-print("Accuracy:",accuracy)
+df["content"] = df["content"].apply(clean_text)
 
-precision=precision_score(y_test,lr_pred)
-print("Precision:",precision)
+# Save cleaned dataset
 
-recall=recall_score(y_test,lr_pred)
-print("Recall:",recall)
+df.to_csv("dataset/news_clean.csv", index=False)
 
-f1=f1_score(y_test,lr_pred)
-print("F1 Score:",f1)
+X = df["content"]
+y = df["label"]
 
-print(classification_report(y_test,lr_pred))
+# -------------------------------------------------------
+# TF-IDF Vectorizer
+# -------------------------------------------------------
 
-cm=confusion_matrix(y_test,lr_pred)
-print(cm)
+vectorizer = TfidfVectorizer(max_features=5000)
 
-disp=ConfusionMatrixDisplay(
-    confusion_matrix=cm,
-    display_labels=["Fake","Real"]
+X = vectorizer.fit_transform(X)
+
+# -------------------------------------------------------
+# Train Test Split
+# -------------------------------------------------------
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.20,
+    random_state=42
 )
+
+# -------------------------------------------------------
+# Models
+# -------------------------------------------------------
+
+models = {
+
+    "Logistic Regression": LogisticRegression(),
+
+    "Naive Bayes": MultinomialNB(),
+
+    "Passive Aggressive": PassiveAggressiveClassifier(
+        max_iter=1000,
+        random_state=42
+    )
+
+}
+
+best_model = None
+best_name = ""
+best_accuracy = 0
+
+print("\n========== MODEL RESULTS ==========\n")
+
+for name, model in models.items():
+
+    model.fit(X_train, y_train)
+
+    prediction = model.predict(X_test)
+
+    accuracy = accuracy_score(y_test, prediction)
+
+    precision = precision_score(y_test, prediction)
+
+    recall = recall_score(y_test, prediction)
+
+    f1 = f1_score(y_test, prediction)
+
+    print("=" * 60)
+
+    print(name)
+
+    print("=" * 60)
+
+    print(f"Accuracy : {accuracy:.4f}")
+
+    print(f"Precision: {precision:.4f}")
+
+    print(f"Recall   : {recall:.4f}")
+
+    print(f"F1 Score : {f1:.4f}")
+
+    print("\nClassification Report\n")
+
+    print(classification_report(y_test, prediction))
+
+    if accuracy > best_accuracy:
+
+        best_accuracy = accuracy
+
+        best_model = model
+
+        best_name = name
+
+        best_prediction = prediction
+
+# -------------------------------------------------------
+# Best Model
+# -------------------------------------------------------
+
+print("\n===============================")
+
+print("Best Model :", best_name)
+
+print("Accuracy   :", best_accuracy)
+
+print("===============================\n")
+
+# -------------------------------------------------------
+# Confusion Matrix
+# -------------------------------------------------------
+
+cm = confusion_matrix(y_test, best_prediction)
+
+disp = ConfusionMatrixDisplay(
+    confusion_matrix=cm,
+    display_labels=["Fake", "Real"]
+)
+
 disp.plot(cmap="Blues")
-plt.title("Confusion Matrix")
+
+plt.title(f"{best_name} Confusion Matrix")
+
 plt.show()
 
-def evaluate_model(name,y_true,y_pred):
-    print("=" *50)
-    print(name)
-    print("="*50)
-    print("Accuracy :",accuracy_score(y_true,y_pred))
-    print("Precision :",precision_score(y_true,y_pred))
-    print("Recall :",recall_score(y_true,y_pred))
-    print("F1 Score :",f1_score(y_true,y_pred))
-    print("\nClassification Report")
-    print(classification_report(y_true,y_pred))
+# -------------------------------------------------------
+# Save Model
+# -------------------------------------------------------
 
-evaluate_model(
-    "Logistic Regression",
-    y_test,
-    lr_pred
-)
-evaluate_model(
-    "Naive Bayes",
-    y_test,
-    nb_pred
-)
-
-evaluate_model(
-    "Passive Aggressive",
-    y_test,
-    pac_pred
-)
-
-results={
-    "Logistic Regression": accuracy_score(y_test,lr_pred),
-    "Naive Bayes": accuracy_score(y_test,lr_pred),
-    "Passive Aggressive":accuracy_score(y_test,lr_pred)
-}
-print("\nModel Comparison")
-
-for model,score in results.item():
-    print(f"{model}:{score:.4f}")
-
-best_model=pac
 joblib.dump(
     best_model,
-    "models/fake_news_mode.pkl"
+    "models/fake_news_model.pkl"
 )
+
 joblib.dump(
     vectorizer,
     "models/vectorizer.pkl"
 )
-print("Best Model Saved Successfully!")
 
+print("\nModel Saved Successfully!")
+
+print("Vectorizer Saved Successfully!")
