@@ -1,0 +1,8 @@
+venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+dataset/Fake.csv
+dataset/True.csv
+dataset/news.csv
+dataset/news_clean.csv

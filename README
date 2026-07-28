@@ -1,0 +1,100 @@
+# 📰 Fake News Detection using Machine Learning
+
+## Overview
+
+This project detects whether a news article is **Fake** or **Real** using Natural Language Processing (NLP) and Machine Learning.
+
+The application is built with Streamlit and uses a trained Passive Aggressive Classifier along with a TF-IDF Vectorizer.
+
+
+---
+## Dataset
+
+The datasets are not included in this repository because of their size.
+
+Download:
+
+- Fake.csv
+- True.csv
+
+Place them inside:
+
+dataset/
+## Features
+
+- Detect Fake News
+- Detect Real News
+- NLP Text Cleaning
+- TF-IDF Vectorization
+- Streamlit Web App
+- Interactive User Interface
+
+---
+
+## Technologies Used
+
+- Python
+- Pandas
+- NumPy
+- Scikit-learn
+- NLTK
+- Streamlit
+- Joblib
+
+---
+
+## Machine Learning Workflow
+
+1. Load Dataset
+2. Clean Text
+3. Remove Stopwords
+4. Apply Stemming
+5. TF-IDF Vectorization
+6. Train Machine Learning Model
+7. Evaluate Model
+8. Save Model
+9. Deploy with Streamlit
+
+---
+
+## Models Used
+
+- Logistic Regression
+- Multinomial Naive Bayes
+- Passive Aggressive Classifier
+
+---
+
+## Installation
+
+```bash
+git clone https://github.com/hasnain670-web/-Fake-News-Detection.git
+
+cd Fake-News-Detection
+
+pip install -r requirements.txt
+
+streamlit run app.py
+```
+
+---
+
+## Project Structure
+
+```text
+Fake-News-Detection/
+│
+├── app.py
+├── train_model.py
+├── dataset/
+├── models/
+├── requirements.txt
+├── runtime.txt
+└── README.md
+```
+
+---
+
+## Author
+
+Muhammad Hasnain
